@@ -241,6 +241,12 @@ model_urls = [
     'http://irimodel.org/IRI-2016/00_iri.tar',
     'http://irimodel.org/COMMON_FILES/00_ccir-ursi.tar',
 ]
+
+# IRI2020, multiple files
+model_folder_2020 = 'iri2020'
+model_urls_2020 = [
+    'https://irimodel.org/IRI-2020/00_iri.zip',
+]
 for model_url in model_urls:
 
     is_downloaded = False
@@ -325,3 +331,76 @@ for indice_url in INDICE_URLS:
         output = open(fn, 'wb')
         output.write(model_file.read())
         output.close()
+
+# IRI2020 download
+model_folder = model_folder_2020
+model_urls = model_urls_2020
+
+for model_url in model_urls:
+
+    is_downloaded = False
+
+    # local file length:
+    local_length = 0
+    # remote file length:
+    remote_length = 0
+
+    tar_file = model_url.split('/')[-1]
+    # data file name:
+    fn = "./dl_models/{}/{}".format(model_folder, tar_file)
+
+    # avoid repeating to download:
+    if os.path.isfile(fn):
+        local_length = os.stat(fn).st_size
+
+    # Download the tar or zip file:
+    print(
+        "Downloading files for {} at {}".format(
+            tar_file,
+            model_url,
+        )
+    )
+
+    # Open url for downloading file:
+    model_file = urllib.request.urlopen(model_url)
+
+    # avoid repeating to download:
+    remote_length = int(model_file.getheader('Content-Length'))
+    if local_length == remote_length:
+        print("{} was already downloaded.".format(fn))
+        is_downloaded = True
+
+    if not is_downloaded:
+        # Download file:
+        output = open(fn, 'wb')
+        output.write(model_file.read())
+        output.close()
+
+    # Handle both tar and zip files:
+    if tar_file.endswith('.zip'):
+        # unzip:
+        cmd = 'unzip ./dl_models/{model_folder}/{tar_file}'.format(
+            model_folder=model_folder,
+            tar_file=tar_file,
+        )
+        print(cmd)
+        os.system(cmd)
+
+        # Move contents:
+        os.system(
+            'mv ./{model_folder}/* ./dl_models/{model_folder}/'.format(
+                model_folder=model_folder,
+            )
+        )
+
+        # Remove folder:
+        os.system('rm -rf ./{}'.format(model_folder))
+    else:
+        # Untar:
+        cmd = 'tar -xvf ./dl_models/{model_folder}/{tar_file} '\
+              '-C ./dl_models/{model_folder}/'.format(
+                model_folder=model_folder,
+                tar_file=tar_file,
+              )
+        print(cmd)
+        os.system(cmd)

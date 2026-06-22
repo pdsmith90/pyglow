@@ -1,9 +1,13 @@
+from __future__ import absolute_import
 import numpy as np
 import os
 
 from iri12py import iri_sub as iri12
 from iri16py import iri_sub as iri16
 from iri16py import read_ig_rz, readapf107
+from iri2020py import iri_sub as iri2020
+from iri2020py import read_ig_rz as read_ig_rz_2020
+from iri2020py import readapf107 as readapf107_2020
 from .constants import DIR_FILE, nan
 
 IONS = ['O+', 'H+', 'HE+', 'O2+', 'NO+']
@@ -12,6 +16,11 @@ IONS = ['O+', 'H+', 'HE+', 'O2+', 'NO+']
 # of the ionosphere global index (ig_rz.dat) and Ap/F10.7 index (apf107.dat)
 # files. IRI 2016 initialization is required only once per session.
 __INIT_IRI16 = False
+
+# Global variable indicating if IRI 2020 has been initialized with the contents
+# of the ionosphere global index (ig_rz.dat) and Ap/F10.7 index (apf107.dat)
+# files. IRI 2020 initialization is required only once per session.
+__INIT_IRI2020 = False
 
 
 class IRI(object):
@@ -45,6 +54,21 @@ class IRI(object):
             read_ig_rz()
             readapf107()
             globals()['__INIT_IRI16'] = True
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def init_iri2020():
+        """
+        If required (depending on the global variable *__INIT_IRI2020*),
+        initialize IRI 2020. Return `True` if the model was
+        initialized and `False` otherwise.
+        """
+        if not globals()['__INIT_IRI2020']:
+            read_ig_rz_2020()
+            readapf107_2020()
+            globals()['__INIT_IRI2020'] = True
             return True
         else:
             return False
@@ -96,10 +120,14 @@ class IRI(object):
             iri = iri12
 
             def init_iri(): return False
+        elif version == 2020:
+            iri_data_stub = 'iri2020_data/'
+            iri = iri2020
+            init_iri = IRI.init_iri2020
         else:
             raise ValueError(
-                "Invalid version of {} for IRI.\n".format(version) +
-                "Either 2016 (default) or 2012 is valid."
+                "Invalid version of {} for IRI.\n".format(version + 0) +
+                "Either 2016 (default), 2012, or 2020 is valid."
             )
 
         jf = np.ones((50,))  # JF switches
